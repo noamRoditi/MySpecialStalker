@@ -2,7 +2,9 @@ package com.example.myspecialstalker;
 
 import android.Manifest;
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.arch.lifecycle.MutableLiveData;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -17,6 +19,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -32,6 +35,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView editText_warning;
     private static SharedPreferences sharedPreferences;
     private MyBroadcastReciever myBroadcastReciever;
+    BroadcastReceiver smsSentReceiver, smsDeliveredReceiver;
 
     String[] appPermissions = {
             Manifest.permission.READ_PHONE_STATE,
@@ -55,6 +59,30 @@ public class MainActivity extends AppCompatActivity {
             requestMultiplePermissions();
         }
         addTextWatchers();
+        smsSentReceiver = new BroadcastReceiver() {
+
+            @Override
+            public void onReceive(Context arg0, Intent arg1) {
+                if(getResultCode() == Activity.RESULT_OK){
+                    NotificationHandler.myCreateNotification("MySpecialStalker", "message sent successfully!", arg0);
+                }else{
+                    Log.w("SMS_RESULT", "Failed to send sms");
+                }
+            }
+        };
+        smsDeliveredReceiver = new BroadcastReceiver() {
+
+            @Override
+            public void onReceive(Context arg0, Intent arg1) {
+                if(getResultCode() == Activity.RESULT_OK){
+                    NotificationHandler.myCreateNotification("MySpecialStalker", "message received successfully!", arg0);
+                }else{
+                    Log.w("SMS_RESULT", "Failed to receive sms");
+                }
+            }
+        };
+        context.registerReceiver(smsSentReceiver, new IntentFilter("SMS_SENT"));
+        context.registerReceiver(smsDeliveredReceiver, new IntentFilter("SMS_DELIVERED"));
     }
 
     public boolean arePermissionsEnabled(){
@@ -164,5 +192,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         unregisterReceiver(myBroadcastReciever);
+        unregisterReceiver(smsSentReceiver);
+        unregisterReceiver(smsDeliveredReceiver);
     };
 }
